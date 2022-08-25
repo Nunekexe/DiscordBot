@@ -20,11 +20,7 @@ public class LinkCommand extends Command {
     private DiscordStatus getDiscordStatusFromDatabase(ProxiedPlayer player) throws SQLException {
 
         DiscordStatus discordStatus = database.findDiscordStatusByUUID(player.getUniqueId().toString());
-
-        if (discordStatus == null) {
-            discordStatus = new DiscordStatus(player.getUniqueId().toString(), null, 0);
-            database.createPlayerStats(discordStatus);
-        }
+        
 
         return discordStatus;
     }
