@@ -30,7 +30,6 @@ public class JoinPlayer implements Listener {
             database.updatePlayerStats(discordStatus);
         }catch (SQLException e){
             e.printStackTrace();
-            System.out.println("Could not update player stats after join.");
         }
     }
 }

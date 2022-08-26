@@ -1,13 +1,11 @@
 package discord.discord;
 
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Category;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.connection.Server;
 
 import java.sql.SQLException;
 import java.util.EnumSet;
@@ -29,69 +27,14 @@ public class CategoryManager {
         if (categoryManagerStatus == null) {
             categoryManagerStatus = new CategoryManagerStatus(ServerName, null, null, null, null, null, null, null);
             database.createCategoryManagerStatus(categoryManagerStatus);
-        }
 
-        return categoryManagerStatus;
-    }
-
-    public static void SetPlayerVoice(ProxiedPlayer player, String role) throws SQLException {
-        String server = player.getServer().getInfo().getName();
-        CreateCategory(server);
-        CategoryManagerStatus categoryManagerStatus = getCategoryStatusFromDatabase(server);
-        DiscordStatus discordStatus = getDiscordStatusFromDatabase(player);
-        String id = discordStatus.getID();
-
-        switch (role)
-        {
-            case "CLASS_D":
-            {
-                MoveMemberVoice(guild.getMemberById(id), guild.getVoiceChannelById(categoryManagerStatus.getvKlasaD()));
-                break;
-            }
-            case "SCIENTIST":
-            {
-                MoveMemberVoice(guild.getMemberById(id), guild.getVoiceChannelById(categoryManagerStatus.getvNaukowiec()));
-                break;
-            }
-            case "SCP":
-            {
-                MoveMemberVoice(guild.getMemberById(id), guild.getVoiceChannelById(categoryManagerStatus.getvScp()));
-                break;
-            }
-            case "MTF":
-            case "GUARD":
-            {
-                MoveMemberVoice(guild.getMemberById(id), guild.getVoiceChannelById(categoryManagerStatus.getvMfo()));
-                break;
-            }
-            case "CI":
-            {
-                MoveMemberVoice(guild.getMemberById(id), guild.getVoiceChannelById(categoryManagerStatus.getvCi()));
-                break;
-            }
-        }
-
-    }
-
-    private static void MoveMemberVoice(Member id, VoiceChannel voice){
-        guild.moveVoiceMember(id, voice).complete();
-    }
-
-    public static void CreateCategory(String name) throws SQLException {
-            CategoryManagerStatus categoryManagerStatus = getCategoryStatusFromDatabase(name);
-            database.updateCategoryManagerStatus(categoryManagerStatus);
-            if (categoryManagerStatus.getServerName() != name){
-                return;
-            }
-            System.out.println(guild.getName());
-
-            Category category = guild.createCategory(name).addPermissionOverride(guild.getRoleById("818737858213969921"), null, EnumSet.of(Permission.VIEW_CHANNEL)).complete();
-            VoiceChannel obserwator = guild.createVoiceChannel("Obserwator", category).complete();
-            VoiceChannel mfo = guild.createVoiceChannel("Mfo", category).complete();
-            VoiceChannel ci = guild.createVoiceChannel("Ci", category).complete();
-            VoiceChannel nuakowiec = guild.createVoiceChannel("Nuakowiec", category).complete();
-            VoiceChannel klasad = guild.createVoiceChannel("KlasaD", category).complete();
-            VoiceChannel scp = guild.createVoiceChannel("Scp", category).complete();
+            Category category = guild.createCategory(ServerName).addPermissionOverride(guild.getRoleById("818737858213969921"), null, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.VOICE_STREAM)).complete();
+            VoiceChannel obserwator = guild.createVoiceChannel("Obserwator", category).addPermissionOverride(guild.getRoleById("818737858213969921"), null, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.VOICE_STREAM)).complete();
+            VoiceChannel mfo = guild.createVoiceChannel("Mfo", category).addPermissionOverride(guild.getRoleById("818737858213969921"), null, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.VOICE_STREAM)).complete();
+            VoiceChannel ci = guild.createVoiceChannel("Ci", category).addPermissionOverride(guild.getRoleById("818737858213969921"), null, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.VOICE_STREAM)).complete();
+            VoiceChannel nuakowiec = guild.createVoiceChannel("Nuakowiec", category).addPermissionOverride(guild.getRoleById("818737858213969921"), null, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.VOICE_STREAM)).complete();
+            VoiceChannel klasad = guild.createVoiceChannel("KlasaD", category).addPermissionOverride(guild.getRoleById("818737858213969921"), null, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.VOICE_STREAM)).complete();
+            VoiceChannel scp = guild.createVoiceChannel("Scp", category).addPermissionOverride(guild.getRoleById("818737858213969921"), null, EnumSet.of(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND, Permission.VOICE_STREAM)).complete();
 
             categoryManagerStatus.setCategory(category.getId());
             categoryManagerStatus.setvObserwator(obserwator.getId());
@@ -102,8 +45,57 @@ public class CategoryManager {
             categoryManagerStatus.setvScp(scp.getId());
 
             database.updateCategoryManagerStatus(categoryManagerStatus);
+        }
+
+        return categoryManagerStatus;
+    }
+
+    public static void SetPlayerVoice(ProxiedPlayer player, String role) throws SQLException {
+        String server = player.getServer().getInfo().getName();
+        CategoryManagerStatus categoryManagerStatus = getCategoryStatusFromDatabase(server);
+        DiscordStatus discordStatus = getDiscordStatusFromDatabase(player);
+        if (discordStatus.getID() == null){return;}
+        Member member = guild.getMemberById(discordStatus.getID());
+
+        if(member == null) {return;}
+
+        switch (role)
+        {
+            case "CLASS_D":
+            {
+                MoveMemberVoice(member, guild.getVoiceChannelById(categoryManagerStatus.getvKlasaD()));
+                break;
+            }
+            case "SCIENTIST":
+            {
+                MoveMemberVoice(member, guild.getVoiceChannelById(categoryManagerStatus.getvNaukowiec()));
+                break;
+            }
+            case "SCP":
+            {
+                MoveMemberVoice(member, guild.getVoiceChannelById(categoryManagerStatus.getvScp()));
+                break;
+            }
+            case "MTF":
+            case "GUARD":
+            {
+                MoveMemberVoice(member, guild.getVoiceChannelById(categoryManagerStatus.getvMfo()));
+                break;
+            }
+            case "CI":
+            {
+                MoveMemberVoice(member, guild.getVoiceChannelById(categoryManagerStatus.getvCi()));
+                break;
+            }
+        }
 
     }
+
+    private static void MoveMemberVoice(Member id, VoiceChannel voice){
+        guild.moveVoiceMember(id, voice).queue();
+    }
+
+
 
     public static void RemoveCategory(String name) throws SQLException {
         CategoryManagerStatus categoryManagerStatus = getCategoryStatusFromDatabase(name);

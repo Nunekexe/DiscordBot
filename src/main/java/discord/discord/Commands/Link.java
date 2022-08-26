@@ -5,6 +5,7 @@ import discord.discord.DiscordStatus;
 import discord.discord.database;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Invite;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.ReadyEvent;
 import net.dv8tion.jda.internal.handle.GuildSetupController;
 import net.md_5.bungee.api.ChatColor;
@@ -19,7 +20,6 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
-import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Member;
 import java.sql.SQLException;
@@ -31,13 +31,6 @@ public class Link extends ListenerAdapter {
 
 
 
-    public static List<String> getGuilds(ReadyEvent event) {
-        List<String> list = new ArrayList<>();
-        for (Guild guild : event.getJDA().getGuilds())
-            list.add(guild.getName());
-        return list;
-    }
-
     private DiscordStatus getDiscordStatusFromDatabase(String code) throws SQLException {
 
         DiscordStatus discordStatus = database.findDiscordStatusByCode(code);
@@ -47,46 +40,49 @@ public class Link extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
+    public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         String command = event.getName();
         if (command.equals("link")){
+            Role role = event.getGuild().getRoleById("861257424219406346");
             OptionMapping kodOption = event.getOption("kod");
             String kod = String.valueOf(kodOption.getAsInt());
+            if (!event.getGuild().getMember(event.getMember()).getRoles().contains(role)){
 
-            try {
-                DiscordStatus discordStatus = getDiscordStatusFromDatabase(kod);
+                try {
+                    DiscordStatus discordStatus = getDiscordStatusFromDatabase(kod);
 
-                if (discordStatus == null) {
-                    event.reply("Podałeś zły kod, użyj /link w minecraft!").setEphemeral(true).queue();
-                    CategoryManager.RemoveCategory("BREACH01");
+                    if (discordStatus == null || discordStatus.getCode() == 0) {
+                        event.reply("Podałeś zły kod, użyj /link w minecraft!").setEphemeral(true).queue();
+
+                        return;
+                    }
+
+                    ProxiedPlayer player = ProxyServer.getInstance().getPlayer(UUID.fromString(discordStatus.getPlayerUUID()));
+                    if (!player.isConnected()){
+                        return;
+                    }
+
+                    player.sendMessage(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', "&eZostałeś połączony z kontem discord!")));
+
+                    discordStatus.setID(event.getUser().getId());
+                    discordStatus.setCode(discordStatus.getCode() - discordStatus.getCode());
+                    database.updatePlayerStats(discordStatus);
+                    event.getGuild().addRoleToMember(event.getMember(),role).queue();
+                    event.reply("Twoje konto minecraft zostało połączone z kontem discord!").setEphemeral(true).queue();
                     return;
+
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
-
-                if (discordStatus.getID() != null){
-                    event.reply("Masz już połączone konto!").setEphemeral(true).queue();
-                    return;
-                }
-
-                ProxiedPlayer player = ProxyServer.getInstance().getPlayer(UUID.fromString(discordStatus.getPlayerUUID()));
-                if (!player.isConnected()){
-                    return;
-                }
-
-                player.sendMessage(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', "&eZostałeś połączony z kontem discord!")));
-
-                discordStatus.setID(event.getUser().getId());
-                database.updatePlayerStats(discordStatus);
-                event.reply("Twoje konto minecraft zostało połączone z kontem discord!").setEphemeral(true).queue();
+            } else {
+                event.reply("Masz już połączone konto!").setEphemeral(true).queue();
                 return;
-
-            } catch (SQLException e) {
-                e.printStackTrace();
             }
         }
     }
 
     @Override
-    public void onGuildReady(@NotNull GuildReadyEvent event) {
+    public void onGuildReady(GuildReadyEvent event) {
         List<CommandData> commandData = new ArrayList<>();
 
         OptionData option1 = new OptionData(OptionType.INTEGER, "kod", "Podaj kod z minecraft /link", true);

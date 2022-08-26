@@ -1,7 +1,5 @@
 package discord.discord;
 
-import org.jetbrains.annotations.NotNull;
-
 public class DiscordStatus {
     private String playerUUID;
 
@@ -9,7 +7,7 @@ public class DiscordStatus {
     private int code;
 
 
-    public DiscordStatus(@NotNull String playerUUID,@NotNull String id,@NotNull int code) {
+    public DiscordStatus(String playerUUID, String id, int code) {
         this.playerUUID = playerUUID;
         this.id = id;
         this.code = code;
